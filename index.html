@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chinese Final 模拟卷</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #222;
+      background: #fff;
+      padding: 16px 20px 32px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    header {
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+    header h1 { font-size: 18px; font-weight: 600; }
+    header p { color: #666; font-size: 13px; margin-top: 4px; }
+    .stats { margin-top: 8px; font-size: 13px; color: #666; }
+    .stats span { margin-right: 16px; }
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
+    }
+    nav button {
+      font-family: inherit;
+      font-size: 13px;
+      padding: 4px 10px;
+      border: 1px solid #ccc;
+      background: #f5f5f5;
+      cursor: pointer;
+    }
+    nav button.active {
+      background: #333;
+      color: #fff;
+      border-color: #333;
+    }
+    .section { display: none; }
+    .section.active { display: block; }
+    .section-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .section-desc { color: #666; font-size: 13px; margin-bottom: 16px; }
+    .question {
+      border: 1px solid #ddd;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .q-num { color: #666; margin-right: 6px; }
+    .q-prompt { margin-bottom: 8px; }
+    .dictation-line { margin-bottom: 4px; line-height: 2; }
+    .blank-input {
+      display: inline-block;
+      min-width: 120px;
+      max-width: 100%;
+      font-family: inherit;
+      font-size: 14px;
+      padding: 2px 6px;
+      border: none;
+      border-bottom: 2px solid #c00;
+      background: #fff8f8;
+      vertical-align: baseline;
+    }
+    .dot-char { color: #c00; text-decoration: underline; font-weight: 600; }
+    textarea, input[type="text"] {
+      width: 100%;
+      font-family: inherit;
+      font-size: 14px;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+    }
+    textarea { min-height: 60px; resize: vertical; }
+    .actions { margin-top: 8px; }
+    .btn {
+      font-family: inherit;
+      font-size: 13px;
+      padding: 4px 12px;
+      margin-right: 6px;
+      border: 1px solid #ccc;
+      background: #f5f5f5;
+      cursor: pointer;
+    }
+    .btn-check { background: #333; color: #fff; border-color: #333; }
+    .feedback { margin-top: 8px; font-size: 13px; display: none; }
+    .feedback.show { display: block; }
+    .feedback.correct { color: #060; }
+    .feedback.wrong { color: #900; }
+    .answer-text { color: #c00; white-space: pre-wrap; margin-top: 4px; }
+    .ref-block { border: 1px solid #ddd; padding: 12px; }
+    .ref-block h4 { font-size: 14px; margin-bottom: 8px; }
+    .ref-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
+    }
+    .ref-item:last-child { border-bottom: none; }
+    .ref-meaning { color: #c00; white-space: nowrap; }
+    .long-answer textarea { min-height: 100px; }
+    footer { margin-top: 24px; font-size: 12px; color: #999; text-align: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Chinese Final 模拟卷</h1>
+    <p>答案需与参考答案完全相同才算答对 · 答错将显示标红答案</p>
+    <div class="stats">
+      <span id="stat-total">共 0 题</span>
+      <span id="stat-done">已答 0</span>
+      <span id="stat-right">正确 0</span>
+    </div>
+  </header>
+
+  <nav id="nav"></nav>
+  <main id="main"></main>
+  <footer>基于 Chinese Final.pdf · 本地模拟练习</footer>
+
+  <script>
+    const DATA = {
+      dictation: {
+        title: "默写",
+        desc: "根据上下文，填写<span class=\"dot-char\">标红部分</span>（须与原文完全一致）。",
+        fillBlank: true,
+        items: [
+          { prefix: "有如此之势，", answer: "而为秦人积威之所劫", suffix: "。" },
+          { prefix: "苟以天下之大，", answer: "下而从六国破亡之故事", suffix: "，是又在六国下矣。" },
+          { prefix: "", answer: "归帆去棹残阳里", suffix: "，背西风，酒旗斜矗。" },
+          { prefix: "千古凭高对此，", answer: "谩嗟荣辱", suffix: "。" },
+          { prefix: "六朝旧事随流水，", answer: "但寒烟衰草凝绿", suffix: "。" },
+          { prefix: "素月分辉，明河共影，", answer: "表里俱澄澈", suffix: "。" },
+          { prefix: "短发萧骚襟袖冷，", answer: "稳泛沧浪空阔", suffix: "。" },
+          { prefix: "扣舷独啸，", answer: "不知今夕何夕", suffix: "。" },
+          { prefix: "原来姹紫嫣红开遍，", answer: "似这般都付与断井颓垣", suffix: "。" },
+          { prefix: "良辰美景奈何天，", answer: "赏心乐事谁家院", suffix: "！" }
+        ]
+      },
+      dots_jian: {
+        title: "加点字 · 谏太宗十思疏",
+        desc: "解释句中<span class=\"dot-char\">加点字</span>的含义，答案须完全一致。",
+        items: [
+          { phrase: "人君当神器之重", char: "当", answer: "主持" },
+          { phrase: "永保无疆之休", char: "休", answer: "福禄" },
+          { phrase: "承天景命", char: "景", answer: "大" },
+          { phrase: "能克终者盖寡", char: "盖", answer: "表示推断" },
+          { phrase: "董之以严刑", char: "董", answer: "督察" },
+          { phrase: "振之以威怒", char: "振", answer: '同"震"，威吓' },
+          { phrase: "将有作", char: "作", answer: "大兴土木" },
+          { phrase: "诚能见可欲", char: "诚", answer: "如果确实" },
+          { phrase: "则思谦冲而自牧", char: "牧", answer: "养" },
+          { phrase: "仁者播其惠", char: "惠", answer: "仁爱" }
+        ]
+      },
+      translate_jian: {
+        title: "翻译 · 谏太宗十思疏",
+        desc: "将下列句子翻译成现代汉语，须与参考答案完全相同。",
+        items: [
+          { q: "斯亦伐根以求木茂，塞源而欲流长者也。", a: "这就如同砍断树根来求得树木茂盛，堵塞源泉而想要水流得远啊。" },
+          { q: "夫在殷忧，必竭诚以待下，既得志，则纵情以傲物。", a: "处在深重的忧虑之中，一定能竭尽诚心来对待臣民；已经实现了志愿，就会放纵自己的性情，看不起别人。" },
+          { q: "终苟免而不怀仁，貌恭而不心服。", a: "他们最终只是苟且免于刑罚，但是并不会怀念（皇上的）仁德，表面上恭顺，内心里却不服气。" },
+          { q: "乐盘游，则思三驱以为度。", a: "喜爱田猎就想到网开一面，田猎有度。" },
+          { q: "恩所加，则思无因喜以谬赏。", a: "施加恩惠，就要考虑到不要因为一时高兴而不恰当地奖赏。" }
+        ]
+      },
+      questions_jian: {
+        title: "题目 · 谏太宗十思疏",
+        desc: "简答题，答案须与参考答案完全相同。",
+        items: [
+          { q: "魏征理想的政治境界是？", a: "文武争驰，在君无事。可以尽豫游之乐，可以养松乔之寿，鸣琴垂拱，不言而化。", long: true },
+          { q: "试析本文在论证上的艺术特色", a: '本文所运用的论证方法主要是比喻论证和对比论证。文中用了大量生动的比喻，借以阐发治国安民的思想，言简意赅，具有很强的说服力。如文章开篇谈论治国要注重"积其德义"这一根本原则时，从两个方面比喻论证，即"木之长者，必固其根本"和"流之远者，必浚其泉源"，"固其根本"是树木长得高的必要条件，而"浚其泉源"也是流水流得长远的前提，运用自然中的现象类比治国的原则，浅显易懂而又生动形象。同样，魏征以水可以载舟也可以覆舟来比喻人民的力量的重要性，至今人们还记忆犹新。\n文中正反对比论证，加强了说服力。正反对比论证集中在一、二自然段，正反对比，使被说明的道理突出来了。如"求木之长者，必固其根本"，而从反面来说"根不固而求木之长"，"知其不可"，因此，根本与长的关系自然而然被人们接受了。再有第二段中引用历史的教训来劝戒太宗时，也注意了正反对比论证，"善始者实繁，克终者盖寡"。', long: true }
+        ]
+      },
+      dots_da: {
+        title: "加点字 · 答司马谏议书",
+        desc: "解释句中<span class=\"dot-char\">加点字</span>的含义，答案须完全一致。",
+        items: [
+          { phrase: "所操之术多异故也", char: "操", answer: "持" },
+          { phrase: "终必不蒙见察", char: "察", answer: "理解" },
+          { phrase: "故今具道所以", char: "具", answer: "详细" },
+          { phrase: "举先王之政", char: "举", answer: "施行" },
+          { phrase: "辟邪说", char: "辟", answer: "批驳" },
+          { phrase: "难壬人", char: "难", answer: "排斥" },
+          { phrase: "则固前知其如此也", char: "固", answer: "本来" },
+          { phrase: "盘庚不为怨者故改其度", char: "度", answer: "计划" },
+          { phrase: "度义而后动", char: "度", answer: "考虑" },
+          { phrase: "是而不见可悔故也", char: "是", answer: "认为正确" }
+        ]
+      },
+      xuci: {
+        title: "虚词 · 答司马谏议书",
+        desc: "下列为虚词释义参考（选择题会出现）。本页为<span class=\"dot-char\">答案对照表</span>，可直接展开查看，无需作答。",
+        reference: true,
+        items: [
+          { phrase: "如君实责我以在位久", char: "以", answer: "因为" },
+          { phrase: "以致天下怨谤", char: "以", answer: "因而" },
+          { phrase: "以授之于有司", char: "以", answer: "把" },
+          { phrase: "以兴利除弊", char: "以", answer: "表目的，来" },
+          { phrase: "以膏泽斯民", char: "以", answer: "表目的，来" },
+          { phrase: "士大夫多以不恤国事", char: "以", answer: "把" },
+          { phrase: "欲出力助上以抗之", char: "以", answer: "表目的，来" },
+          { phrase: "而议事每不合", char: "事", answer: "事情" },
+          { phrase: "如曰今日当一切不事事", char: "事", answer: "做（事）；事情" },
+          { phrase: "所操之术多异故也", char: "故", answer: "缘故" },
+          { phrase: "故今具道所以", char: "以", answer: "所以" },
+          { phrase: "不为侵官", char: "为", answer: "是" },
+          { phrase: "未能助上大有为", char: "为", answer: "作为" },
+          { phrase: "为天下理财", char: "为", answer: "替" },
+          { phrase: "同俗自媚于众为善", char: "为", answer: "当作" },
+          { phrase: "则众何为而不汹汹然", char: "为", answer: "因为" },
+          { phrase: "守前所为而已", char: "为", answer: "做" },
+          { phrase: "则众何为而不汹汹然", char: "何", answer: "那么" },
+          { phrase: "某则以谓", char: "则", answer: "却" },
+          { phrase: "则固前知其如此也", char: "则", answer: "那么" },
+          { phrase: "议法度而修之于朝廷", char: "度", answer: "制度" },
+          { phrase: "不为怨者故改其度", char: "度", answer: "计划" },
+          { phrase: "度义而后动", char: "度", answer: "考虑" }
+        ]
+      },
+      translate_da: {
+        title: "翻译 · 答司马谏议书",
+        desc: "将下列句子翻译成现代汉语，须与参考答案完全相同。",
+        items: [
+          { q: "至于怨诽之多，则固前知其如此也。", a: "至于天下对我的怨恨非议这么多，那是我本来预先料到会这样的。" },
+          { q: "如曰今日当一切不事事，守前所为而已，则非某之所敢知。", a: "如果您说我现在应该不做事，无所作为，守着以前的成法就行了，那么这就不是我敢领教的了。" },
+          { q: "无由会晤，不任区区向往之至。", a: "没有缘由见面，内心不胜仰慕至极。" },
+          { q: "故今具道所以，冀君实或见恕也。", a: "所以现在详细地说出我的理由，希望您或许能够原谅我吧。" }
+        ]
+      },
+      questions_da: {
+        title: "题目 · 答司马谏议书",
+        desc: "简答题，答案须与参考答案完全相同。",
+        items: [
+          { q: "王安石对司马光的态度如何？", a: "友好、客气、恭敬。" },
+          { q: "王安石对变法的立场和态度是怎么样的？", a: "王安石不把反对放在心上，坚持变法，义无反顾。" },
+          { q: "第二段结构？", a: "（1）定原则——名实相符\n（2）树靶子——五条罪名\n（3）驳罪名——名实不符\n（4）表心理——早有预期（不惧恶名）", long: true },
+          { q: "第三段结构？", a: "（1）分析怨谤原因——揭露本质\n（2）举盘庚之迁的例子类比\n（3）两个假设句子表态度——不畏怨谤", long: true }
+        ]
+      }
+    };
+
+    const state = {};
+    let totalQuestions = 0;
+
+    function normalize(s) {
+      return s
+        .replace(/\s+/g, "")
+        .replace(/[\u201C\u201D"]/g, "\u201C")
+        .replace(/[\u2018\u2019']/g, "\u2018")
+        .replace(/[，,]/g, "，")
+        .replace(/[。．]/g, "。")
+        .replace(/[；;]/g, "；")
+        .replace(/[：:]/g, "：")
+        .replace(/[（(]/g, "（")
+        .replace(/[）)]/g, "）")
+        .replace(/[！!]/g, "！")
+        .replace(/[？?]/g, "？")
+        .trim();
+    }
+
+    function highlightChar(phrase, char) {
+      const idx = phrase.indexOf(char);
+      if (idx === -1) return phrase;
+      return phrase.slice(0, idx) +
+        `<span class="dot-char">${char}</span>` +
+        phrase.slice(idx + char.length);
+    }
+
+    function countQuestions() {
+      let n = 0;
+      for (const key of Object.keys(DATA)) {
+        if (DATA[key].reference) continue;
+        const sec = DATA[key];
+        n += sec.items.length;
+      }
+      return n;
+    }
+
+    function updateStats() {
+      const keys = Object.keys(state);
+      const done = keys.filter(k => state[k].checked).length;
+      const right = keys.filter(k => state[k].checked && state[k].correct).length;
+      document.getElementById("stat-total").textContent = `共 ${totalQuestions} 题`;
+      document.getElementById("stat-done").textContent = `已答 ${done}`;
+      document.getElementById("stat-right").textContent = `正确 ${right}`;
+    }
+
+    function checkAnswer(id, userAns, correctAns) {
+      const ok = normalize(userAns) === normalize(correctAns);
+      state[id] = { checked: true, correct: ok };
+      const fb = document.getElementById(`fb-${id}`);
+      fb.className = `feedback show ${ok ? "correct" : "wrong"}`;
+      if (ok) {
+        fb.innerHTML = "✓ 回答正确！";
+      } else {
+        fb.innerHTML = `<div class="answer-label">✗ 回答错误，参考答案：</div><div class="answer-text">${escapeHtml(correctAns).replace(/\n/g, "<br>")}</div>`;
+      }
+      updateStats();
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function renderDotPrompt(item) {
+      return highlightChar(item.phrase, item.char);
+    }
+
+    function buildSections() {
+      const nav = document.getElementById("nav");
+      const main = document.getElementById("main");
+      let qIndex = 0;
+
+      Object.entries(DATA).forEach(([key, sec], si) => {
+        const btn = document.createElement("button");
+        btn.textContent = sec.title;
+        btn.dataset.section = key;
+        if (si === 0) btn.classList.add("active");
+        btn.onclick = () => switchSection(key);
+        nav.appendChild(btn);
+
+        const section = document.createElement("div");
+        section.className = `section${si === 0 ? " active" : ""}`;
+        section.id = `sec-${key}`;
+        section.innerHTML = `<h2 class="section-title">${sec.title}</h2><p class="section-desc">${sec.desc}</p>`;
+
+        if (sec.reference) {
+          const ref = document.createElement("div");
+          ref.className = "ref-block";
+          ref.innerHTML = `<h4>虚词释义对照（题目底下全是答案，供选择题复习）</h4>`;
+          sec.items.forEach(item => {
+            const row = document.createElement("div");
+            row.className = "ref-item";
+            row.innerHTML = `<span class="ref-phrase">${renderDotPrompt(item)}</span><span class="ref-meaning">${escapeHtml(item.answer)}</span>`;
+            ref.appendChild(row);
+          });
+          section.appendChild(ref);
+        } else if (sec.fillBlank) {
+          sec.items.forEach((item, i) => {
+            qIndex++;
+            const id = `q${qIndex}`;
+            section.appendChild(createFillBlankEl(id, qIndex, item));
+          });
+        } else if (key.startsWith("dots_")) {
+          sec.items.forEach((item, i) => {
+            qIndex++;
+            const id = `q${qIndex}`;
+            const prompt = `解释 "${renderDotPrompt(item)}" 中加点字的含义：`;
+            section.appendChild(createQuestionEl(id, qIndex, prompt, item.answer, false, true));
+          });
+        } else {
+          sec.items.forEach((item, i) => {
+            qIndex++;
+            const id = `q${qIndex}`;
+            section.appendChild(createQuestionEl(id, qIndex, item.q, item.a, !!item.long));
+          });
+        }
+
+        main.appendChild(section);
+      });
+
+      totalQuestions = countQuestions();
+      updateStats();
+    }
+
+    function createFillBlankEl(id, num, item) {
+      const div = document.createElement("div");
+      div.className = "question";
+      const width = Math.min(Math.max(item.answer.length * 16, 120), 480);
+      div.innerHTML = `
+        <div class="q-prompt dictation-line">
+          <span class="q-num">${num}.</span>
+          ${escapeHtml(item.prefix)}<input type="text" class="blank-input" id="input-${id}" placeholder="填写此处" style="width:${width}px">${escapeHtml(item.suffix)}
+        </div>
+        <div class="actions">
+          <button class="btn btn-check" onclick="doCheck('${id}')">提交</button>
+          <button class="btn btn-clear" onclick="doClear('${id}')">清空</button>
+        </div>
+        <div class="feedback" id="fb-${id}"></div>
+      `;
+      div.dataset.answer = item.answer;
+      div.querySelector("input").addEventListener("keydown", e => {
+        if (e.key === "Enter") { e.preventDefault(); doCheck(id); }
+      });
+      return div;
+    }
+
+    function createQuestionEl(id, num, prompt, answer, isLong, isHtml) {
+      const div = document.createElement("div");
+      div.className = `question${isLong ? " long-answer" : ""}`;
+      const inputTag = isLong
+        ? `<textarea id="input-${id}" placeholder="请输入答案…"></textarea>`
+        : `<input type="text" id="input-${id}" placeholder="请输入答案…">`;
+
+      div.innerHTML = `
+        <div class="q-prompt"><span class="q-num">${num}</span>${isHtml ? prompt : escapeHtml(prompt)}</div>
+        ${inputTag}
+        <div class="actions">
+          <button class="btn btn-check" onclick="doCheck('${id}')">提交</button>
+          <button class="btn btn-clear" onclick="doClear('${id}')">清空</button>
+        </div>
+        <div class="feedback" id="fb-${id}"></div>
+      `;
+      div.dataset.answer = answer;
+      div.dataset.qid = id;
+
+      div.querySelector("textarea, input").addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey && e.target.tagName !== "TEXTAREA") {
+          e.preventDefault();
+          doCheck(id);
+        }
+      });
+
+      return div;
+    }
+
+    function doCheck(id) {
+      const input = document.getElementById(`input-${id}`);
+      const qEl = input.closest(".question");
+      checkAnswer(id, input.value, qEl.dataset.answer);
+    }
+
+    function doClear(id) {
+      document.getElementById(`input-${id}`).value = "";
+      const fb = document.getElementById(`fb-${id}`);
+      fb.className = "feedback";
+      fb.innerHTML = "";
+      delete state[id];
+      updateStats();
+    }
+
+    function switchSection(key) {
+      document.querySelectorAll("nav button").forEach(b => {
+        b.classList.toggle("active", b.dataset.section === key);
+      });
+      document.querySelectorAll(".section").forEach(s => {
+        s.classList.toggle("active", s.id === `sec-${key}`);
+      });
+    }
+
+    window.doCheck = doCheck;
+    window.doClear = doClear;
+    buildSections();
+  </script>
+</body>
+</html>

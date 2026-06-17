@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Open Quiz",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8080"],
+      "cwd": "${workspaceFolder}",
+      "serverReadyAction": {
+        "pattern": "Serving HTTP on .+ port (\\d+)",
+        "uriFormat": "http://127.0.0.1:%s",
+        "action": "openExternally"
+      }
+    }
+  ]
+}
