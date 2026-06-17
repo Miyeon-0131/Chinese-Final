@@ -218,13 +218,7 @@
           { phrase: "士大夫多以不恤国事", char: "以", answer: "把" },
           { phrase: "欲出力助上以抗之", char: "以", answer: "表目的，来" },
           { phrase: "而议事每不合", char: "事", answer: "事情" },
-          {
-            phrase: "如曰今日当一切不事事",
-            multi: [
-              { char: "事", answer: "做（事）" },
-              { char: "事", answer: "事情" }
-            ]
-          },
+          { phrase: "如曰今日当一切不事事", char: "事", answer: "做（事）；事情", highlightAll: true },
           { phrase: "所操之术多异故也", char: "故", answer: "缘故" },
           { phrase: "故今具道所以", char: "以", answer: "所以" },
           { phrase: "不为侵官", char: "为", answer: "是" },
@@ -340,6 +334,22 @@
         phrase.slice(idx + char.length);
     }
 
+    function highlightAllChars(phrase, char) {
+      let html = "";
+      let pos = 0;
+      while (pos < phrase.length) {
+        const idx = phrase.indexOf(char, pos);
+        if (idx === -1) {
+          html += escapeHtml(phrase.slice(pos));
+          break;
+        }
+        html += escapeHtml(phrase.slice(pos, idx));
+        html += `<span class="dot-char">${char}</span>`;
+        pos = idx + char.length;
+      }
+      return html;
+    }
+
     function countQuestions() {
       let n = 0;
       for (const key of Object.keys(DATA)) {
@@ -375,6 +385,9 @@
     }
 
     function renderDotPrompt(item) {
+      if (item.highlightAll) {
+        return highlightAllChars(item.phrase, item.char);
+      }
       return highlightChar(item.phrase, item.char);
     }
 
@@ -416,7 +429,8 @@
             qIndex++;
             const id = `q${qIndex}`;
             const label = key === "xuci" ? "加点虚词" : "加点字";
-            section.appendChild(createDotQuestionEl(id, qIndex, item, label));
+            const prompt = `解释 "${renderDotPrompt(item)}" 中${label}的含义：`;
+            section.appendChild(createQuestionEl(id, qIndex, prompt, item.answer, false, true));
           });
         } else {
           sec.items.forEach((item, i) => {
@@ -460,49 +474,6 @@
       return div;
     }
 
-    function createDotQuestionEl(id, num, item, label) {
-      if (item.multi) {
-        return createMultiDotQuestionEl(id, num, item, label);
-      }
-      const prompt = `解释 "${renderDotPrompt(item)}" 中${label}的含义：`;
-      return createQuestionEl(id, num, prompt, item.answer, false, true);
-    }
-
-    function createMultiDotQuestionEl(id, num, item, label) {
-      const div = document.createElement("div");
-      div.className = "question";
-      const char = item.multi[0].char;
-      let prompt = `解释 "`;
-      let pos = 0;
-      item.multi.forEach((blank, blankIdx) => {
-        const idx = item.phrase.indexOf(char, pos);
-        prompt += escapeHtml(item.phrase.slice(pos, idx));
-        const width = Math.min(Math.max(blank.answer.length * 14, 60), 180);
-        prompt += `<input type="text" class="blank-input" id="input-${id}-${blankIdx}" placeholder="第${blankIdx + 1}处" style="width:${width}px">`;
-        pos = idx + char.length;
-      });
-      prompt += `${escapeHtml(item.phrase.slice(pos))}" 中两处${label}的含义：`;
-
-      div.innerHTML = `
-        <div class="q-prompt"><span class="q-num">${num}</span>${prompt}</div>
-        <div class="actions">
-          <button class="btn btn-check" onclick="doCheck('${id}')">提交</button>
-          <button class="btn btn-clear" onclick="doClear('${id}')">清空</button>
-        </div>
-        <div class="feedback" id="fb-${id}"></div>
-      `;
-      div.dataset.qid = id;
-      div.dataset.multi = "1";
-      div.dataset.answers = JSON.stringify(item.multi.map(b => b.answer));
-
-      div.querySelectorAll("input").forEach(input => {
-        input.addEventListener("keydown", e => {
-          if (e.key === "Enter") { e.preventDefault(); doCheck(id); }
-        });
-      });
-      return div;
-    }
-
     function createQuestionEl(id, num, prompt, answer, isLong, isHtml) {
       const div = document.createElement("div");
       div.className = `question${isLong ? " long-answer" : ""}`;
@@ -533,43 +504,13 @@
     }
 
     function doCheck(id) {
-      const qEl = document.querySelector(`.question[data-qid="${id}"]`) ||
-        document.getElementById(`input-${id}`)?.closest(".question");
-      if (qEl?.dataset.multi) {
-        const answers = JSON.parse(qEl.dataset.answers);
-        const results = answers.map((ans, i) => {
-          const val = document.getElementById(`input-${id}-${i}`).value;
-          return { ok: normalize(val) === normalize(ans), ans };
-        });
-        const ok = results.every(r => r.ok);
-        state[id] = { checked: true, correct: ok };
-        const fb = document.getElementById(`fb-${id}`);
-        fb.className = `feedback show ${ok ? "correct" : "wrong"}`;
-        if (ok) {
-          fb.innerHTML = "✓ 回答正确！";
-        } else {
-          const detail = results.map((r, i) =>
-            `第${i + 1}处：${escapeHtml(r.ans)}`
-          ).join("；");
-          fb.innerHTML = `<div class="answer-label">✗ 回答错误，参考答案：</div><div class="answer-text">${detail}</div>`;
-        }
-        updateStats();
-        return;
-      }
       const input = document.getElementById(`input-${id}`);
+      const qEl = input.closest(".question");
       checkAnswer(id, input.value, qEl.dataset.answer);
     }
 
     function doClear(id) {
-      const qEl = document.querySelector(`.question[data-qid="${id}"]`) ||
-        document.getElementById(`input-${id}`)?.closest(".question");
-      if (qEl?.dataset.multi) {
-        JSON.parse(qEl.dataset.answers).forEach((_, i) => {
-          document.getElementById(`input-${id}-${i}`).value = "";
-        });
-      } else {
-        document.getElementById(`input-${id}`).value = "";
-      }
+      document.getElementById(`input-${id}`).value = "";
       const fb = document.getElementById(`fb-${id}`);
       fb.className = "feedback";
       fb.innerHTML = "";
