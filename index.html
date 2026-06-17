@@ -271,6 +271,86 @@
 
     const state = {};
     let totalQuestions = 0;
+    const sectionInfo = {};
+    const sectionOrder = {};
+
+    function shuffleArray(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function initSectionInfo() {
+      let idx = 1;
+      Object.entries(DATA).forEach(([key, sec]) => {
+        sectionInfo[key] = { startId: idx, count: sec.items.length };
+        idx += sec.items.length;
+      });
+    }
+
+    function clearSectionState(key) {
+      const info = sectionInfo[key];
+      for (let i = 0; i < info.count; i++) {
+        delete state[`q${info.startId + i}`];
+      }
+    }
+
+    function renderSectionQuestions(key, reshuffle) {
+      const sec = DATA[key];
+      const sectionEl = document.getElementById(`sec-${key}`);
+      const { startId } = sectionInfo[key];
+
+      sectionEl.querySelectorAll(".question, .section-tools").forEach(el => el.remove());
+
+      if (reshuffle || !sectionOrder[key]) {
+        sectionOrder[key] = shuffleArray(sec.items);
+      }
+
+      const tools = document.createElement("div");
+      tools.className = "section-tools";
+      let toolsHtml = `<button class="btn" type="button" onclick="reshuffleSection('${key}')">打乱题目顺序</button>`;
+      if (sec.randomBlank) {
+        toolsHtml += ` <button class="btn" type="button" onclick="refreshDictation()">重新随机挖空</button>`;
+      }
+      tools.innerHTML = toolsHtml;
+      sectionEl.appendChild(tools);
+
+      const label = key === "xuci" ? "加点虚词" : key.startsWith("dots_") ? "加点字" : "";
+
+      sectionOrder[key].forEach((item, i) => {
+        const displayNum = i + 1;
+        const id = `q${startId + i}`;
+        let el;
+
+        if (sec.fillBlank && sec.randomBlank) {
+          el = createFillBlankEl(id, displayNum, randomBlankFromSentence(item));
+        } else if (sec.fillBlank) {
+          el = createFillBlankEl(id, displayNum, item);
+        } else if (label) {
+          const prompt = `解释 "${renderDotPrompt(item)}" 中${label}的含义：`;
+          el = createQuestionEl(id, displayNum, prompt, item.answer, false, true);
+        } else {
+          el = createQuestionEl(id, displayNum, item.q, item.a, !!item.long);
+        }
+        sectionEl.appendChild(el);
+      });
+    }
+
+    function reshuffleSection(key) {
+      clearSectionState(key);
+      sectionOrder[key] = shuffleArray(DATA[key].items);
+      renderSectionQuestions(key, false);
+      updateStats();
+    }
+
+    function refreshDictation() {
+      clearSectionState("dictation");
+      renderSectionQuestions("dictation", false);
+      updateStats();
+    }
 
     function normalize(s) {
       return s
@@ -306,24 +386,32 @@
       };
     }
 
-    function renderDictationQuestions(section, sec, startNum) {
-      section.querySelectorAll(".question").forEach(el => el.remove());
-      sec.items.forEach((sentence, i) => {
-        const num = startNum + i;
-        const id = `q${num}`;
-        section.appendChild(createFillBlankEl(id, num, randomBlankFromSentence(sentence)));
-      });
-    }
+    function buildSections() {
+      const nav = document.getElementById("nav");
+      const main = document.getElementById("main");
+      nav.innerHTML = "";
+      main.innerHTML = "";
+      initSectionInfo();
 
-    function refreshDictation() {
-      for (let i = 1; i <= DATA.dictation.items.length; i++) {
-        delete state[`q${i}`];
-      }
-      renderDictationQuestions(
-        document.getElementById("sec-dictation"),
-        DATA.dictation,
-        1
-      );
+      Object.entries(DATA).forEach(([key, sec], si) => {
+        const btn = document.createElement("button");
+        btn.textContent = sec.title;
+        btn.dataset.section = key;
+        if (si === 0) btn.classList.add("active");
+        btn.onclick = () => switchSection(key);
+        nav.appendChild(btn);
+
+        const section = document.createElement("div");
+        section.className = `section${si === 0 ? " active" : ""}`;
+        section.id = `sec-${key}`;
+        section.innerHTML = `<h2 class="section-title">${sec.title}</h2><p class="section-wish">${SECTION_WISHES[si] || "祝语文考试顺利，加油！"}</p><p class="section-desc">${sec.desc}</p>`;
+        main.appendChild(section);
+
+        sectionOrder[key] = shuffleArray(sec.items);
+        renderSectionQuestions(key, false);
+      });
+
+      totalQuestions = countQuestions();
       updateStats();
     }
 
@@ -389,62 +477,6 @@
         return highlightCharOccurrence(item.phrase, item.char, item.charIndex);
       }
       return highlightChar(item.phrase, item.char);
-    }
-
-    function buildSections() {
-      const nav = document.getElementById("nav");
-      const main = document.getElementById("main");
-      let qIndex = 0;
-
-      Object.entries(DATA).forEach(([key, sec], si) => {
-        const btn = document.createElement("button");
-        btn.textContent = sec.title;
-        btn.dataset.section = key;
-        if (si === 0) btn.classList.add("active");
-        btn.onclick = () => switchSection(key);
-        nav.appendChild(btn);
-
-        const section = document.createElement("div");
-        section.className = `section${si === 0 ? " active" : ""}`;
-        section.id = `sec-${key}`;
-        section.innerHTML = `<h2 class="section-title">${sec.title}</h2><p class="section-wish">${SECTION_WISHES[si] || "祝语文考试顺利，加油！"}</p><p class="section-desc">${sec.desc}</p>`;
-
-        if (sec.fillBlank) {
-          if (sec.randomBlank) {
-            const tools = document.createElement("div");
-            tools.className = "section-tools";
-            tools.innerHTML = `<button class="btn" type="button" onclick="refreshDictation()">重新随机挖空</button>`;
-            section.appendChild(tools);
-            renderDictationQuestions(section, sec, 1);
-            qIndex += sec.items.length;
-          } else {
-            sec.items.forEach((item, i) => {
-              qIndex++;
-              const id = `q${qIndex}`;
-              section.appendChild(createFillBlankEl(id, qIndex, item));
-            });
-          }
-        } else if (key.startsWith("dots_") || key === "xuci") {
-          sec.items.forEach((item, i) => {
-            qIndex++;
-            const id = `q${qIndex}`;
-            const label = key === "xuci" ? "加点虚词" : "加点字";
-            const prompt = `解释 "${renderDotPrompt(item)}" 中${label}的含义：`;
-            section.appendChild(createQuestionEl(id, qIndex, prompt, item.answer, false, true));
-          });
-        } else {
-          sec.items.forEach((item, i) => {
-            qIndex++;
-            const id = `q${qIndex}`;
-            section.appendChild(createQuestionEl(id, qIndex, item.q, item.a, !!item.long));
-          });
-        }
-
-        main.appendChild(section);
-      });
-
-      totalQuestions = countQuestions();
-      updateStats();
     }
 
     function createFillBlankEl(id, num, blank) {
@@ -549,6 +581,7 @@
     window.doCheck = doCheck;
     window.doClear = doClear;
     window.refreshDictation = refreshDictation;
+    window.reshuffleSection = reshuffleSection;
     initInputNavigation();
     buildSections();
   </script>
