@@ -520,18 +520,19 @@
 
     function initInputNavigation() {
       document.addEventListener("keydown", e => {
-        if (e.key !== "ArrowDown") return;
+        if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
         const el = e.target;
         if (!el.matches("input.blank-input, input[type='text'][id^='input-']")) return;
         const section = el.closest(".section");
         if (!section) return;
         const inputs = [...section.querySelectorAll("input.blank-input, input[type='text'][id^='input-']")];
         const i = inputs.indexOf(el);
-        if (i >= 0 && i < inputs.length - 1) {
+        if (i < 0) return;
+        const target = e.key === "ArrowDown" ? inputs[i + 1] : inputs[i - 1];
+        if (target) {
           e.preventDefault();
-          const next = inputs[i + 1];
-          next.focus();
-          next.select();
+          target.focus();
+          target.select();
         }
       });
     }
