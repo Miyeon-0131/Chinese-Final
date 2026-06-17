@@ -198,8 +198,7 @@
       },
       xuci: {
         title: "虚词 · 答司马谏议书",
-        desc: "下列为虚词释义参考（选择题会出现）。本页为<span class=\"dot-char\">答案对照表</span>，可直接展开查看，无需作答。",
-        reference: true,
+        desc: "解释句中<span class=\"dot-char\">加点虚词</span>的含义，答案须完全一致（选择题会出现）。",
         items: [
           { phrase: "如君实责我以在位久", char: "以", answer: "因为" },
           { phrase: "以致天下怨谤", char: "以", answer: "因而" },
@@ -278,9 +277,7 @@
     function countQuestions() {
       let n = 0;
       for (const key of Object.keys(DATA)) {
-        if (DATA[key].reference) continue;
-        const sec = DATA[key];
-        n += sec.items.length;
+        n += DATA[key].items.length;
       }
       return n;
     }
@@ -333,28 +330,18 @@
         section.id = `sec-${key}`;
         section.innerHTML = `<h2 class="section-title">${sec.title}</h2><p class="section-desc">${sec.desc}</p>`;
 
-        if (sec.reference) {
-          const ref = document.createElement("div");
-          ref.className = "ref-block";
-          ref.innerHTML = `<h4>虚词释义对照（题目底下全是答案，供选择题复习）</h4>`;
-          sec.items.forEach(item => {
-            const row = document.createElement("div");
-            row.className = "ref-item";
-            row.innerHTML = `<span class="ref-phrase">${renderDotPrompt(item)}</span><span class="ref-meaning">${escapeHtml(item.answer)}</span>`;
-            ref.appendChild(row);
-          });
-          section.appendChild(ref);
-        } else if (sec.fillBlank) {
+        if (sec.fillBlank) {
           sec.items.forEach((item, i) => {
             qIndex++;
             const id = `q${qIndex}`;
             section.appendChild(createFillBlankEl(id, qIndex, item));
           });
-        } else if (key.startsWith("dots_")) {
+        } else if (key.startsWith("dots_") || key === "xuci") {
           sec.items.forEach((item, i) => {
             qIndex++;
             const id = `q${qIndex}`;
-            const prompt = `解释 "${renderDotPrompt(item)}" 中加点字的含义：`;
+            const label = key === "xuci" ? "加点虚词" : "加点字";
+            const prompt = `解释 "${renderDotPrompt(item)}" 中${label}的含义：`;
             section.appendChild(createQuestionEl(id, qIndex, prompt, item.answer, false, true));
           });
         } else {
