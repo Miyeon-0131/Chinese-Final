@@ -518,6 +518,24 @@
       updateStats();
     }
 
+    function initInputNavigation() {
+      document.addEventListener("keydown", e => {
+        if (e.key !== "ArrowDown") return;
+        const el = e.target;
+        if (!el.matches("input.blank-input, input[type='text'][id^='input-']")) return;
+        const section = el.closest(".section");
+        if (!section) return;
+        const inputs = [...section.querySelectorAll("input.blank-input, input[type='text'][id^='input-']")];
+        const i = inputs.indexOf(el);
+        if (i >= 0 && i < inputs.length - 1) {
+          e.preventDefault();
+          const next = inputs[i + 1];
+          next.focus();
+          next.select();
+        }
+      });
+    }
+
     function switchSection(key) {
       document.querySelectorAll("nav button").forEach(b => {
         b.classList.toggle("active", b.dataset.section === key);
@@ -530,6 +548,7 @@
     window.doCheck = doCheck;
     window.doClear = doClear;
     window.refreshDictation = refreshDictation;
+    initInputNavigation();
     buildSections();
   </script>
 </body>
