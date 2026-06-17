@@ -131,20 +131,20 @@
     const DATA = {
       dictation: {
         title: "默写",
-        desc: "根据上下文填写空缺部分（须与原文完全一致）。每题仅挖一个空，每次加载随机选取句中一段。",
+        desc: "标点符号会在题目中给出，仅需填写挖空处的文字（须与原文完全一致）。每题仅挖一个空，每次加载随机选取。",
         fillBlank: true,
         randomBlank: true,
         items: [
-          { parts: ["有如此之势，", "而为秦人积威之所劫", "。"] },
-          { parts: ["苟以天下之大，", "下而从六国破亡之故事", "，是又在六国下矣。"] },
-          { parts: ["归帆去棹残阳里", "，背西风，", "酒旗斜矗。"] },
-          { parts: ["千古凭高对此，", "谩嗟荣辱", "。"] },
-          { parts: ["六朝旧事随流水，", "但寒烟衰草凝绿", "。"] },
-          { parts: ["素月分辉，明河共影，", "表里俱澄澈", "。"] },
-          { parts: ["短发萧骚襟袖冷，", "稳泛沧浪空阔", "。"] },
-          { parts: ["扣舷独啸，", "不知今夕何夕", "。"] },
-          { parts: ["原来姹紫嫣红开遍，", "似这般都付与断井颓垣", "。"] },
-          { parts: ["良辰美景奈何天，", "赏心乐事谁家院", "！"] }
+          "有如此之势，而为秦人积威之所劫。",
+          "苟以天下之大，下而从六国破亡之故事，是又在六国下矣。",
+          "归帆去棹残阳里，背西风，酒旗斜矗。",
+          "千古凭高对此，谩嗟荣辱。",
+          "六朝旧事随流水，但寒烟衰草凝绿。",
+          "素月分辉，明河共影，表里俱澄澈。",
+          "短发萧骚襟袖冷，稳泛沧浪空阔。",
+          "扣舷独啸，不知今夕何夕。",
+          "原来姹紫嫣红开遍，似这般都付与断井颓垣。",
+          "良辰美景奈何天，赏心乐事谁家院！"
         ]
       },
       dots_jian: {
@@ -268,26 +268,38 @@
         .trim();
     }
 
-    function randomBlankFromParts(parts) {
-      const eligible = parts
-        .map((part, index) => ({ part, index }))
-        .filter(({ part }) => /[\u4e00-\u9fff]/.test(part));
-      const pick = eligible[Math.floor(Math.random() * eligible.length)];
-      const i = pick.index;
+    function tokenizeSentence(sentence) {
+      const tokens = [];
+      const re = /([\u4e00-\u9fff]+)|([，。！？；：、])/g;
+      let m;
+      while ((m = re.exec(sentence)) !== null) {
+        tokens.push({
+          type: m[1] ? "text" : "punct",
+          value: m[1] || m[2]
+        });
+      }
+      return tokens;
+    }
+
+    function randomBlankFromSentence(sentence) {
+      const tokens = tokenizeSentence(sentence);
+      const blankable = tokens
+        .map((token, index) => ({ token, index }))
+        .filter(({ token }) => token.type === "text");
+      const pick = blankable[Math.floor(Math.random() * blankable.length)];
       return {
-        prefix: parts.slice(0, i).join(""),
-        answer: parts[i],
-        suffix: parts.slice(i + 1).join("")
+        tokens,
+        blankIndex: pick.index,
+        answer: pick.token.value
       };
     }
 
     function renderDictationQuestions(section, sec, startNum) {
       section.querySelectorAll(".question").forEach(el => el.remove());
-      sec.items.forEach((item, i) => {
+      sec.items.forEach((sentence, i) => {
         const num = startNum + i;
         const id = `q${num}`;
-        const blank = randomBlankFromParts(item.parts);
-        section.appendChild(createFillBlankEl(id, num, blank));
+        section.appendChild(createFillBlankEl(id, num, randomBlankFromSentence(sentence)));
       });
     }
 
@@ -405,22 +417,27 @@
       updateStats();
     }
 
-    function createFillBlankEl(id, num, item) {
+    function createFillBlankEl(id, num, blank) {
       const div = document.createElement("div");
       div.className = "question";
-      const width = Math.min(Math.max(item.answer.length * 16, 120), 480);
+      const width = Math.min(Math.max(blank.answer.length * 16, 80), 480);
+      let line = `<span class="q-num">${num}.</span>`;
+      blank.tokens.forEach((token, i) => {
+        if (i === blank.blankIndex) {
+          line += `<input type="text" class="blank-input" id="input-${id}" placeholder="填写此处" style="width:${width}px">`;
+        } else {
+          line += escapeHtml(token.value);
+        }
+      });
       div.innerHTML = `
-        <div class="q-prompt dictation-line">
-          <span class="q-num">${num}.</span>
-          ${escapeHtml(item.prefix)}<input type="text" class="blank-input" id="input-${id}" placeholder="填写此处" style="width:${width}px">${escapeHtml(item.suffix)}
-        </div>
+        <div class="q-prompt dictation-line">${line}</div>
         <div class="actions">
           <button class="btn btn-check" onclick="doCheck('${id}')">提交</button>
           <button class="btn btn-clear" onclick="doClear('${id}')">清空</button>
         </div>
         <div class="feedback" id="fb-${id}"></div>
       `;
-      div.dataset.answer = item.answer;
+      div.dataset.answer = blank.answer;
       div.querySelector("input").addEventListener("keydown", e => {
         if (e.key === "Enter") { e.preventDefault(); doCheck(id); }
       });
