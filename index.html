@@ -218,7 +218,8 @@
           { phrase: "士大夫多以不恤国事", char: "以", answer: "把" },
           { phrase: "欲出力助上以抗之", char: "以", answer: "表目的，来" },
           { phrase: "而议事每不合", char: "事", answer: "事情" },
-          { phrase: "如曰今日当一切不事事", char: "事", answer: "做（事）；事情", highlightAll: true },
+          { phrase: "如曰今日当一切不事事", char: "事", charIndex: 0, answer: "做（事）" },
+          { phrase: "如曰今日当一切不事事", char: "事", charIndex: 1, answer: "事情" },
           { phrase: "所操之术多异故也", char: "故", answer: "缘故" },
           { phrase: "故今具道所以", char: "以", answer: "所以" },
           { phrase: "不为侵官", char: "为", answer: "是" },
@@ -334,20 +335,19 @@
         phrase.slice(idx + char.length);
     }
 
-    function highlightAllChars(phrase, char) {
-      let html = "";
+    function highlightCharOccurrence(phrase, char, occurrence) {
       let pos = 0;
-      while (pos < phrase.length) {
+      for (let found = 0; found <= occurrence; found++) {
         const idx = phrase.indexOf(char, pos);
-        if (idx === -1) {
-          html += escapeHtml(phrase.slice(pos));
-          break;
+        if (idx === -1) return phrase;
+        if (found === occurrence) {
+          return phrase.slice(0, idx) +
+            `<span class="dot-char">${char}</span>` +
+            phrase.slice(idx + char.length);
         }
-        html += escapeHtml(phrase.slice(pos, idx));
-        html += `<span class="dot-char">${char}</span>`;
         pos = idx + char.length;
       }
-      return html;
+      return phrase;
     }
 
     function countQuestions() {
@@ -385,8 +385,8 @@
     }
 
     function renderDotPrompt(item) {
-      if (item.highlightAll) {
-        return highlightAllChars(item.phrase, item.char);
+      if (item.charIndex != null) {
+        return highlightCharOccurrence(item.phrase, item.char, item.charIndex);
       }
       return highlightChar(item.phrase, item.char);
     }
