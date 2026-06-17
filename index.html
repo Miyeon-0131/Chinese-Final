@@ -5,66 +5,122 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chinese Final 模拟卷</title>
   <style>
+    :root {
+      --bg: #fff;
+      --text: #222;
+      --text-muted: #666;
+      --text-faint: #999;
+      --border: #ddd;
+      --border-light: #eee;
+      --border-header: #ccc;
+      --surface: #f5f5f5;
+      --surface-input: #fff;
+      --blank-bg: #fff8f8;
+      --accent: #c00;
+      --accent-text: #333;
+      --nav-active-bg: #333;
+      --nav-active-text: #fff;
+      --correct: #060;
+      --wrong: #900;
+      --wish-bg: #fff8f8;
+    }
+    html[data-theme="dark"] {
+      --bg: #1a1a1a;
+      --text: #e8e8e8;
+      --text-muted: #aaa;
+      --text-faint: #777;
+      --border: #444;
+      --border-light: #333;
+      --border-header: #555;
+      --surface: #2a2a2a;
+      --surface-input: #252525;
+      --blank-bg: #2d2222;
+      --accent: #ff6b6b;
+      --accent-text: #e8e8e8;
+      --nav-active-bg: #e8e8e8;
+      --nav-active-text: #1a1a1a;
+      --correct: #6fcf97;
+      --wrong: #ff8787;
+      --wish-bg: #2d2222;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: system-ui, "Microsoft YaHei", sans-serif;
       font-size: 14px;
       line-height: 1.6;
-      color: #222;
-      background: #fff;
+      color: var(--text);
+      background: var(--bg);
       padding: 16px 20px 32px;
       max-width: 800px;
       margin: 0 auto;
     }
     header {
-      border-bottom: 1px solid #ccc;
+      border-bottom: 1px solid var(--border-header);
       padding-bottom: 12px;
       margin-bottom: 12px;
     }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
     header h1 { font-size: 18px; font-weight: 600; }
-    header p { color: #666; font-size: 13px; margin-top: 4px; }
-    .stats { margin-top: 8px; font-size: 13px; color: #666; }
+    header p { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+    .stats { margin-top: 8px; font-size: 13px; color: var(--text-muted); }
     .stats span { margin-right: 16px; }
+    .theme-btn {
+      font-family: inherit;
+      font-size: 13px;
+      padding: 4px 10px;
+      border: 1px solid var(--border-header);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
     nav {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
       margin-bottom: 16px;
       padding-bottom: 12px;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid var(--border-light);
     }
     nav button {
       font-family: inherit;
       font-size: 13px;
       padding: 4px 10px;
-      border: 1px solid #ccc;
-      background: #f5f5f5;
+      border: 1px solid var(--border-header);
+      background: var(--surface);
+      color: var(--text);
       cursor: pointer;
     }
     nav button.active {
-      background: #333;
-      color: #fff;
-      border-color: #333;
+      background: var(--nav-active-bg);
+      color: var(--nav-active-text);
+      border-color: var(--nav-active-bg);
     }
     .section { display: none; }
     .section.active { display: block; }
     .section-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-    .section-desc { color: #666; font-size: 13px; margin-bottom: 8px; }
+    .section-desc { color: var(--text-muted); font-size: 13px; margin-bottom: 8px; }
     .section-wish {
-      color: #c00;
+      color: var(--accent);
       font-size: 13px;
       margin-bottom: 12px;
       padding: 6px 10px;
-      background: #fff8f8;
-      border-left: 3px solid #c00;
+      background: var(--wish-bg);
+      border-left: 3px solid var(--accent);
     }
     .section-tools { margin-bottom: 16px; }
     .question {
-      border: 1px solid #ddd;
+      border: 1px solid var(--border);
       padding: 12px;
       margin-bottom: 12px;
     }
-    .q-num { color: #666; margin-right: 6px; }
+    .q-num { color: var(--text-muted); margin-right: 6px; }
     .q-prompt { margin-bottom: 8px; }
     .dictation-line { margin-bottom: 4px; line-height: 2; }
     .blank-input {
@@ -75,17 +131,20 @@
       font-size: 14px;
       padding: 2px 6px;
       border: none;
-      border-bottom: 2px solid #c00;
-      background: #fff8f8;
+      border-bottom: 2px solid var(--accent);
+      background: var(--blank-bg);
+      color: var(--text);
       vertical-align: baseline;
     }
-    .dot-char { color: #c00; text-decoration: underline; font-weight: 600; }
+    .dot-char { color: var(--accent); text-decoration: underline; font-weight: 600; }
     textarea, input[type="text"] {
       width: 100%;
       font-family: inherit;
       font-size: 14px;
       padding: 6px 8px;
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-header);
+      background: var(--surface-input);
+      color: var(--text);
     }
     textarea { min-height: 60px; resize: vertical; }
     .actions { margin-top: 8px; }
@@ -94,35 +153,46 @@
       font-size: 13px;
       padding: 4px 12px;
       margin-right: 6px;
-      border: 1px solid #ccc;
-      background: #f5f5f5;
+      border: 1px solid var(--border-header);
+      background: var(--surface);
+      color: var(--text);
       cursor: pointer;
     }
-    .btn-check { background: #333; color: #fff; border-color: #333; }
+    .btn-check { background: var(--nav-active-bg); color: var(--nav-active-text); border-color: var(--nav-active-bg); }
     .feedback { margin-top: 8px; font-size: 13px; display: none; }
     .feedback.show { display: block; }
-    .feedback.correct { color: #060; }
-    .feedback.wrong { color: #900; }
-    .answer-text { color: #c00; white-space: pre-wrap; margin-top: 4px; }
-    .ref-block { border: 1px solid #ddd; padding: 12px; }
+    .feedback.correct { color: var(--correct); }
+    .feedback.wrong { color: var(--wrong); }
+    .answer-text { color: var(--accent); white-space: pre-wrap; margin-top: 4px; }
+    .ref-block { border: 1px solid var(--border); padding: 12px; }
     .ref-block h4 { font-size: 14px; margin-bottom: 8px; }
     .ref-item {
       display: flex;
       justify-content: space-between;
       gap: 12px;
       padding: 4px 0;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid var(--border-light);
       font-size: 13px;
     }
     .ref-item:last-child { border-bottom: none; }
-    .ref-meaning { color: #c00; white-space: nowrap; }
+    .ref-meaning { color: var(--accent); white-space: nowrap; }
     .long-answer textarea { min-height: 100px; }
-    footer { margin-top: 24px; font-size: 12px; color: #999; text-align: center; }
+    footer { margin-top: 24px; font-size: 12px; color: var(--text-faint); text-align: center; }
   </style>
+  <script>
+    (function () {
+      const saved = localStorage.getItem("theme");
+      const dark = saved === "dark" || (!saved && matchMedia("(prefers-color-scheme: dark)").matches);
+      if (dark) document.documentElement.dataset.theme = "dark";
+    })();
+  </script>
 </head>
 <body>
   <header>
-    <h1>Chinese Final 模拟卷</h1>
+    <div class="header-row">
+      <h1>Chinese Final 模拟卷</h1>
+      <button class="theme-btn" id="theme-btn" type="button" onclick="toggleTheme()">深色模式</button>
+    </div>
     <p>答案文字一致即可（标点符号差异不计）· 答错将显示标红答案</p>
     <div class="stats">
       <span id="stat-total">共 0 题</span>
@@ -578,10 +648,30 @@
       });
     }
 
+    function updateThemeButton() {
+      const dark = document.documentElement.dataset.theme === "dark";
+      document.getElementById("theme-btn").textContent = dark ? "浅色模式" : "深色模式";
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const dark = html.dataset.theme === "dark";
+      if (dark) {
+        delete html.dataset.theme;
+        localStorage.setItem("theme", "light");
+      } else {
+        html.dataset.theme = "dark";
+        localStorage.setItem("theme", "dark");
+      }
+      updateThemeButton();
+    }
+
     window.doCheck = doCheck;
     window.doClear = doClear;
     window.refreshDictation = refreshDictation;
     window.reshuffleSection = reshuffleSection;
+    window.toggleTheme = toggleTheme;
+    updateThemeButton();
     initInputNavigation();
     buildSections();
   </script>
