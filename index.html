@@ -50,6 +50,7 @@
     .section.active { display: block; }
     .section-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
     .section-desc { color: #666; font-size: 13px; margin-bottom: 16px; }
+    .section-tools { margin-bottom: 16px; }
     .question {
       border: 1px solid #ddd;
       padding: 12px;
@@ -130,19 +131,20 @@
     const DATA = {
       dictation: {
         title: "默写",
-        desc: "根据上下文，填写<span class=\"dot-char\">标红部分</span>（须与原文完全一致）。",
+        desc: "根据上下文填写空缺部分（须与原文完全一致）。每题仅挖一个空，每次加载随机选取句中一段。",
         fillBlank: true,
+        randomBlank: true,
         items: [
-          { prefix: "有如此之势，", answer: "而为秦人积威之所劫", suffix: "。" },
-          { prefix: "苟以天下之大，", answer: "下而从六国破亡之故事", suffix: "，是又在六国下矣。" },
-          { prefix: "", answer: "归帆去棹残阳里", suffix: "，背西风，酒旗斜矗。" },
-          { prefix: "千古凭高对此，", answer: "谩嗟荣辱", suffix: "。" },
-          { prefix: "六朝旧事随流水，", answer: "但寒烟衰草凝绿", suffix: "。" },
-          { prefix: "素月分辉，明河共影，", answer: "表里俱澄澈", suffix: "。" },
-          { prefix: "短发萧骚襟袖冷，", answer: "稳泛沧浪空阔", suffix: "。" },
-          { prefix: "扣舷独啸，", answer: "不知今夕何夕", suffix: "。" },
-          { prefix: "原来姹紫嫣红开遍，", answer: "似这般都付与断井颓垣", suffix: "。" },
-          { prefix: "良辰美景奈何天，", answer: "赏心乐事谁家院", suffix: "！" }
+          { parts: ["有如此之势，", "而为秦人积威之所劫", "。"] },
+          { parts: ["苟以天下之大，", "下而从六国破亡之故事", "，是又在六国下矣。"] },
+          { parts: ["归帆去棹残阳里", "，背西风，", "酒旗斜矗。"] },
+          { parts: ["千古凭高对此，", "谩嗟荣辱", "。"] },
+          { parts: ["六朝旧事随流水，", "但寒烟衰草凝绿", "。"] },
+          { parts: ["素月分辉，明河共影，", "表里俱澄澈", "。"] },
+          { parts: ["短发萧骚襟袖冷，", "稳泛沧浪空阔", "。"] },
+          { parts: ["扣舷独啸，", "不知今夕何夕", "。"] },
+          { parts: ["原来姹紫嫣红开遍，", "似这般都付与断井颓垣", "。"] },
+          { parts: ["良辰美景奈何天，", "赏心乐事谁家院", "！"] }
         ]
       },
       dots_jian: {
@@ -266,6 +268,41 @@
         .trim();
     }
 
+    function randomBlankFromParts(parts) {
+      const eligible = parts
+        .map((part, index) => ({ part, index }))
+        .filter(({ part }) => /[\u4e00-\u9fff]/.test(part));
+      const pick = eligible[Math.floor(Math.random() * eligible.length)];
+      const i = pick.index;
+      return {
+        prefix: parts.slice(0, i).join(""),
+        answer: parts[i],
+        suffix: parts.slice(i + 1).join("")
+      };
+    }
+
+    function renderDictationQuestions(section, sec, startNum) {
+      section.querySelectorAll(".question").forEach(el => el.remove());
+      sec.items.forEach((item, i) => {
+        const num = startNum + i;
+        const id = `q${num}`;
+        const blank = randomBlankFromParts(item.parts);
+        section.appendChild(createFillBlankEl(id, num, blank));
+      });
+    }
+
+    function refreshDictation() {
+      for (let i = 1; i <= DATA.dictation.items.length; i++) {
+        delete state[`q${i}`];
+      }
+      renderDictationQuestions(
+        document.getElementById("sec-dictation"),
+        DATA.dictation,
+        1
+      );
+      updateStats();
+    }
+
     function highlightChar(phrase, char) {
       const idx = phrase.indexOf(char);
       if (idx === -1) return phrase;
@@ -331,11 +368,20 @@
         section.innerHTML = `<h2 class="section-title">${sec.title}</h2><p class="section-desc">${sec.desc}</p>`;
 
         if (sec.fillBlank) {
-          sec.items.forEach((item, i) => {
-            qIndex++;
-            const id = `q${qIndex}`;
-            section.appendChild(createFillBlankEl(id, qIndex, item));
-          });
+          if (sec.randomBlank) {
+            const tools = document.createElement("div");
+            tools.className = "section-tools";
+            tools.innerHTML = `<button class="btn" type="button" onclick="refreshDictation()">重新随机挖空</button>`;
+            section.appendChild(tools);
+            renderDictationQuestions(section, sec, 1);
+            qIndex += sec.items.length;
+          } else {
+            sec.items.forEach((item, i) => {
+              qIndex++;
+              const id = `q${qIndex}`;
+              section.appendChild(createFillBlankEl(id, qIndex, item));
+            });
+          }
         } else if (key.startsWith("dots_") || key === "xuci") {
           sec.items.forEach((item, i) => {
             qIndex++;
@@ -436,6 +482,7 @@
 
     window.doCheck = doCheck;
     window.doClear = doClear;
+    window.refreshDictation = refreshDictation;
     buildSections();
   </script>
 </body>
