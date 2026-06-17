@@ -49,7 +49,15 @@
     .section { display: none; }
     .section.active { display: block; }
     .section-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-    .section-desc { color: #666; font-size: 13px; margin-bottom: 16px; }
+    .section-desc { color: #666; font-size: 13px; margin-bottom: 8px; }
+    .section-wish {
+      color: #c00;
+      font-size: 13px;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      background: #fff8f8;
+      border-left: 3px solid #c00;
+    }
     .section-tools { margin-bottom: 16px; }
     .question {
       border: 1px solid #ddd;
@@ -115,7 +123,7 @@
 <body>
   <header>
     <h1>Chinese Final 模拟卷</h1>
-    <p>答案需与参考答案完全相同才算答对 · 答错将显示标红答案</p>
+    <p>答案文字一致即可（标点符号差异不计）· 答错将显示标红答案</p>
     <div class="stats">
       <span id="stat-total">共 0 题</span>
       <span id="stat-done">已答 0</span>
@@ -249,22 +257,25 @@
       }
     };
 
+    const SECTION_WISHES = [
+      "祝语文考试顺利！默写一字不错，下笔如有神！",
+      "加油！加点字释义记牢，考试稳拿分！",
+      "祝语文考试顺利！翻译流畅准确，自信作答！",
+      "沉着应试，简答题思路清晰，祝你高分！",
+      "祝语文考试顺利！答司马谏议书你能行！",
+      "虚词辨析多练几遍，考场一定没问题！",
+      "祝语文考试顺利！翻译拿满分，加油！",
+      "最后一关，坚持住，祝你语文考试圆满成功！"
+    ];
+
     const state = {};
     let totalQuestions = 0;
 
     function normalize(s) {
       return s
         .replace(/\s+/g, "")
-        .replace(/[\u201C\u201D"]/g, "\u201C")
-        .replace(/[\u2018\u2019']/g, "\u2018")
-        .replace(/[，,]/g, "，")
-        .replace(/[。．]/g, "。")
-        .replace(/[；;]/g, "；")
-        .replace(/[：:]/g, "：")
-        .replace(/[（(]/g, "（")
-        .replace(/[）)]/g, "）")
-        .replace(/[！!]/g, "！")
-        .replace(/[？?]/g, "？")
+        .replace(/[\u201C\u201D\u2018\u2019""'']/g, "")
+        .replace(/[，,。．；;：:！!？?、—\-…·《》「」『』【】（）()\[\]{}]/g, "")
         .trim();
     }
 
@@ -377,7 +388,7 @@
         const section = document.createElement("div");
         section.className = `section${si === 0 ? " active" : ""}`;
         section.id = `sec-${key}`;
-        section.innerHTML = `<h2 class="section-title">${sec.title}</h2><p class="section-desc">${sec.desc}</p>`;
+        section.innerHTML = `<h2 class="section-title">${sec.title}</h2><p class="section-wish">${SECTION_WISHES[si] || "祝语文考试顺利，加油！"}</p><p class="section-desc">${sec.desc}</p>`;
 
         if (sec.fillBlank) {
           if (sec.randomBlank) {
